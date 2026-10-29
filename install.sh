@@ -80,7 +80,9 @@ reported=$(SUPERSHELL_MEASUREMENTS=0 "$binary" --version) || fail 'The downloade
 [ "${SUPERSHELL_UPDATE:-0}" != 1 ] || printf 'SUPERSHELL_UPDATE:installing\n'
 destination=$root/versions/$version
 if [ -e "$destination" ]; then
-  [ -f "$destination/.archive.sha256" ] && [ "$(cat "$destination/.archive.sha256")" = "$actual" ] || fail "Version $version already exists with different contents."
+  if [ ! -f "$destination/.archive.sha256" ] || [ "$(cat "$destination/.archive.sha256")" != "$actual" ]; then
+    fail "Version $version already exists with different contents."
+  fi
 else
   printf '%s\n' "$actual" > "$work/unpacked/.archive.sha256"
   mv "$work/unpacked" "$destination"
