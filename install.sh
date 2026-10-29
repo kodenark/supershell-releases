@@ -48,7 +48,11 @@ trap 'exit 1' 1 2 15
 work=$(mktemp -d "$root/versions/.install-XXXXXXXX")
 asset=supershell-$version-$os-$arch.tar.gz
 download() {
-  curl -fsSL --connect-timeout 10 --max-time 300 "$base/download/$version/$1" -o "$work/$1" || fail "Cannot download $1 from $repo."
+  if [ "${SUPERSHELL_UPDATE:-0}" = 1 ] && [ -n "${SUPERSHELL_UPDATE_DOWNLOAD_DIR:-}" ]; then
+    cp "$SUPERSHELL_UPDATE_DOWNLOAD_DIR/$1" "$work/$1" || fail "Cannot read downloaded $1."
+  else
+    curl -fsSL --connect-timeout 10 --max-time 300 "$base/download/$version/$1" -o "$work/$1" || fail "Cannot download $1 from $repo."
+  fi
 }
 download SHA256SUMS
 download "$asset"
@@ -73,6 +77,7 @@ binary=$work/unpacked/bin/supershell
 [ -x "$binary" ] || fail 'The release has no executable bin/supershell.'
 reported=$(SUPERSHELL_MEASUREMENTS=0 "$binary" --version) || fail 'The downloaded binary cannot run on this system.'
 [ "$reported" = "${version#v}" ] || fail 'The binary version does not match the release.'
+[ "${SUPERSHELL_UPDATE:-0}" != 1 ] || printf 'SUPERSHELL_UPDATE:installing\n'
 destination=$root/versions/$version
 if [ -e "$destination" ]; then
   [ -f "$destination/.archive.sha256" ] && [ "$(cat "$destination/.archive.sha256")" = "$actual" ] || fail "Version $version already exists with different contents."
